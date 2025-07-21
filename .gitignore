@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+telehealth_env/
 *.env
 *.db
 *.sqlite3
