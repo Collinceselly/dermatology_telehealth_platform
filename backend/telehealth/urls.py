@@ -15,8 +15,31 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from authentication.models import CustomUser
+
+
+# Import urlpatterns from django-two-factor-auth explicitly
+from two_factor.urls import urlpatterns as two_factor_urls
+
+# --- CRITICAL FOR ADMIN 2FA ENFORCEMENT ---
+# Import the custom AdminSite provided by django-two-factor-auth
+from two_factor.admin import AdminSiteOTPRequired
+
+# Replace Django's default admin.site with the 2FA-enabled version
+admin.site.__class__ = AdminSiteOTPRequired
+# --- END CRITICAL FOR ADMIN 2FA ENFORCEMENT ---
+
+
+# urlpatterns = [
+#     path('admin/', admin.site.urls),
+#     path('', include(two_factor_urls, namespace='two_factor')),
+#     path('api/', include('rest_framework.urls')),
+# ]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('two_factor/', include(two_factor_urls, namespace='two_factor')),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('api/', include('rest_framework.urls')),
 ]

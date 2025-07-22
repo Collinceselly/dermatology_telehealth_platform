@@ -42,7 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'mfa',
+    'two_factor',
+    'django_otp',
+    'django_otp.plugins.otp_static',
+    'django_otp.plugins.otp_totp',
     'corsheaders',
     'authentication',
 ]
@@ -54,6 +57,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
@@ -68,7 +72,7 @@ ROOT_URLCONF = 'telehealth.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'], # Add template directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -93,11 +97,23 @@ DATABASES = {
         'NAME': os.getenv('DATABASE_NAME'),
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'POST': os.getenv('DATABASE_PORT'),
+        'PORT': os.getenv('DATABASE_PORT'),
         'HOST': os.getenv('DATABASE_HOST'),
     }
 }
 
+# Custom user model
+AUTH_USER_MODEL = 'authentication.CustomUser'
+
+PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.Argon2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    ]
+
+# Fernet Key
+FERNET_KEY = os.getenv('FERNET_KEY')
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -126,7 +142,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi'
 
 USE_I18N = True
 
@@ -149,3 +165,32 @@ SECURE_SSL_REDIRECT = False # Set to True in production
 SESSION_COOKIE_SECURE = False # Set to True in production
 CSRF_COOKIE_SECURE = False # Set to True in production
 SECURE_HSTS_SECONDS = 0 # Set to 31536000 in production
+
+LOGIN_URL = 'two_factor:login'  # Use two-factor auth login
+LOGIN_REDIRECT_URL = '/admin/'
+LOGOUT_REDIRECT_URL = '/'  # Redirect to homepage after logout
+TWO_FACTOR_LOGIN_URL = 'two_factor:login'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'two_factor': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'django_otp': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Two-Factor Authentication Login</title>
+    </head>
+    <body>
+        <h2>Login</h2>
+        {% if form.errors %}
+            <p style="color: red;">Invalid email or password. Please try again.</p>
+        {% endif %}
+        <form method="post" action="{% url 'two_factor:login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <p>
+                <label for="id_auth-username">Email:</label>
+                <input type="email" name="auth-username" id="id_auth-username" required>
+            </p>
+            <p>
+                <label for="id_auth-password">Password:</label>
+                <input type="password" name="auth-password" id="id_auth-password" required>
+            </p>
+            <button type="submit">Log in</button>
+        </form>
+    </body>
+    </html>
