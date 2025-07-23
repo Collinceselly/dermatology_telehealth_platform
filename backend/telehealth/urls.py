@@ -17,17 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from authentication.models import CustomUser
+from authentication.custom_admin import custom_admin_site
 
 
 # Import urlpatterns from django-two-factor-auth explicitly
-from two_factor.urls import urlpatterns as two_factor_urls
+# from two_factor.urls import urlpatterns as two_factor_urls
 
 # --- CRITICAL FOR ADMIN 2FA ENFORCEMENT ---
 # Import the custom AdminSite provided by django-two-factor-auth
-from two_factor.admin import AdminSiteOTPRequired
+# from two_factor.admin import AdminSiteOTPRequired
 
 # Replace Django's default admin.site with the 2FA-enabled version
-admin.site.__class__ = AdminSiteOTPRequired
+# admin.site.__class__ = AdminSiteOTPRequired
 # --- END CRITICAL FOR ADMIN 2FA ENFORCEMENT ---
 
 
@@ -38,8 +39,9 @@ admin.site.__class__ = AdminSiteOTPRequired
 # ]
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('two_factor/', include(two_factor_urls, namespace='two_factor')),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('api/', include('rest_framework.urls')),
+    path('admin/', custom_admin_site.urls),
+    # path('two_factor/', include(two_factor_urls, namespace='two_factor')),
+    # path('accounts/', include('django.contrib.auth.urls')),
+    # path('api/', include('rest_framework.urls')),
+    path('user/', include('authentication.urls')),
 ]

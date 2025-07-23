@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
+    # 'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
@@ -100,6 +100,28 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT'),
         'HOST': os.getenv('DATABASE_HOST'),
     }
+}
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Africastalking settings
+AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME')
+AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
+AFRICASTALKING_SENDER_ID = os.getenv('AFRICASTALKING_SENDER_ID')
+
+
+# Rest framework
+REST_FRAMEWORK = {
+  'DEFAULT_AUTHENTICATION_CLASSES': [
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
+  ],
 }
 
 # Custom user model
@@ -166,10 +188,12 @@ SESSION_COOKIE_SECURE = False # Set to True in production
 CSRF_COOKIE_SECURE = False # Set to True in production
 SECURE_HSTS_SECONDS = 0 # Set to 31536000 in production
 
-LOGIN_URL = 'two_factor:login'  # Use two-factor auth login
+LOGIN_URL = '/admin/login/'  
 LOGIN_REDIRECT_URL = '/admin/'
-LOGOUT_REDIRECT_URL = '/'  # Redirect to homepage after logout
-TWO_FACTOR_LOGIN_URL = 'two_factor:login'
+LOGOUT_REDIRECT_URL = '/admin/login'
+
+TWO_FACTOR_PATCH_ADMIN = False
+# TWO_FACTOR_LOGIN_URL = 'two_factor:login'
 
 LOGGING = {
     'version': 1,
