@@ -55,3 +55,32 @@ class VerifyCodeSerializer(serializers.Serializer):
         if not stored_code or stored_code != data['code']:
             raise serializers.ValidationError({"code": "Invalid or expired verification code."})
         return data
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    def validate_email(self, value):
+        return value.lower()
+    
+    def validate(self, data):
+        return data
+    
+
+class LoginVerifyCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate_code(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError('Code must be a 6-digit number.')
+        return value.strip()
+    
+    def validate_email(self, value):
+        if not CustomUser.objects.filter(email__iexact=value.lower()).exists():
+            raise serializers.ValidationError('User not found.')
+        return value.lower()
+    
+    def validate(self, data):
+        return data
