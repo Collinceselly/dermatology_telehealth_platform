@@ -51,8 +51,8 @@ const VerifyLoginOTPForm = () => {
         },
         withCredentials: true,
       });
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      // localStorage.setItem('access_token', response.data.access);
+      // localStorage.setItem('refresh_token', response.data.refresh);
       setSuccess('Login successful! Redirecting to dashboard...');
       setTimeout(() => navigate(response.data.redirect), 2000);
     } catch (err) {

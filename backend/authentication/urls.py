@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from rest_framework.decorators import api_view
 
 urlpatterns = [   
     # path('protected-api/', views.protected_view, name='protected_api'),
@@ -17,4 +18,10 @@ urlpatterns = [
 
     # CSRF token endpoint
     path('get-csrf/', views.get_csrf_token, name='get_csrf_token'),
+
+    # Logout endpoint
+    path('logout/', views.logout, name='logout'),
+
+    # Token refresh endpoint
+    path('refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 ]

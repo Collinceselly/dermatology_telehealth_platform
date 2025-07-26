@@ -5,6 +5,7 @@ import VerifyCodeForm from './components/VerifyCodeForm';
 import LoginForm from './components/LoginForm';
 import VerifyLoginOTPForm from './components/VerifyLoginOTPForm';
 import PatientDashboard from './components/PatientDashboard';
+import LogoutButton from './components/LogoutButton';
 import './index.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<LoginForm />} />
         <Route path="/login-otp" element={<VerifyLoginOTPForm />} />
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
+        <Route path="/logout" element={<LogoutButton />} />
       </Routes>
     </Router>
   );

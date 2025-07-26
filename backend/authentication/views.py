@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from .serializers import UserRegisterSerializer, VerifyCodeSerializer, LoginSerializer, LoginVerifyCodeSerializer
 from .models import CustomUser
 import random
@@ -18,6 +20,7 @@ from django.core.cache import cache
 import africastalking
 import logging
 from django.middleware.csrf import get_token
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +84,7 @@ def protected_view(request):
 @permission_classes([IsAuthenticated])
 # @otp_required
 def protected_api(request):
+    logger.debug(f"ProtectedAPI: User={request.user.email if request.user.is_authenticated else 'None'}, Cookies={request.COOKIES}")
     return Response({'message': f'Hello, {request.user.email}! You are authenticated.'})
 
 @api_view(['POST'])
@@ -286,12 +290,12 @@ def verify_login_otp(request):
     
     # Generate JWT tokens
     refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
     logger.debug(f"VerifyLoginOTP: JWT generated for {email}")
     
-    return Response({
+    response = Response({
         "message": "Login successful",
-        "access": str(refresh.access_token),
-        "refresh": str(refresh),
         "user": {
             "email": user.email,
             "first_name": user.first_name,
@@ -299,3 +303,99 @@ def verify_login_otp(request):
         },
         "redirect": "/patient-dashboard/"
     }, status=200)
+
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE, # True in production
+        samesite='Lax',
+        path='/',
+        max_age=5 * 60 # 5 Minutes
+    )
+
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE, # True for production
+        samesite='Lax',
+        path='/',
+        max_age=24 * 60 * 60 # 1 day
+    )
+
+    return response
+
+
+# The logout view when invoked deletes the access and refresh tokens from the cookies thereby completely logging out a user and preventing access to the endpoints untill a new login is made.
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    try:
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            logger.debug("Logout: No refresh token provided")
+            return Response({"error": "No refresh token provided"}, status=400)
+        
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        logger.debug(f"Logout: Refresh token blacklisted for user {request.user.email}")
+        
+        response = Response({"message": "Successfully logged out"}, status=200)
+        response.delete_cookie('access_token', path='/')
+        response.delete_cookie('refresh_token', path='/')
+        return response
+    except TokenError as e:
+        logger.error(f"Logout failed: {str(e)}")
+        return Response({"error": "Failed to log out"}, status=400)
+    
+
+
+# A view that serves the funcitonality of extending the user session by issuing a new access_token when the current one expires, using a long-lived refresh_token preventing frequent logouts and allowing seamless session continuation
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            logger.debug("TokenRefresh: No refresh token provided in cookies")
+            return Response({"error": "No refresh token provided"}, status=400)
+        
+        try:
+             # Create a mutable copy of request data
+             data = dict(request.data)
+             data['refresh'] = refresh_token
+             request._full_data = data # Update request data
+             response = super().post(request, *args, **kwargs)
+            
+             if response.status_code == 200:
+                new_access_token = response.data.get('access')
+                logger.debug(f"TokenRefresh: New access token generated for {request.user.email if request.user.is_authenticated else 'anonymous'}, Accesstoken={new_access_token[:10]}...")
+                response.set_cookie(
+                    key='access_token',
+                    value=new_access_token,
+                    httponly=True,
+                    secure=settings.JWT_COOKIE_SECURE,
+                    samesite='Lax',
+                    path='/',
+                    max_age=5 * 60
+                )
+                # Handle refresh token rotation
+                if settings.SIMPLE_JWT.get('ROTATE_REFRESH_TOKENS', False):
+                    new_refresh_token = response.data.get('refresh')
+                    if new_refresh_token:
+                        logger.debug(f"TokenRefresh: New refresh token generated for {request.user.email if request.user.is_authenticated else 'anonymous'}, RefreshToken={new_refresh_token[:10]}...")
+                        response.set_cookie(
+                            key='refresh_token',
+                            value=new_refresh_token,
+                            httponly=True,
+                            secure=settings.JWT_COOKIE_SECURE,
+                            samesite='Lax',
+                            path='/',
+                            max_age=24 * 60 * 60
+                        )
+             return response
+        except InvalidToken as e:
+            logger.error(f"TokenRefresh failed: Invalid token {refresh_token[:10]}... - {str(e)}")
+            return Response({"error": str(e)}, status=401)
+        except TokenError as e:
+            logger.error(f"TokenRefresh failed: {str(e)}")
+            return Response({"error": str(e)}, status=401)

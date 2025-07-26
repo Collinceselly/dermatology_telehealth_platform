@@ -65,30 +65,46 @@ MIDDLEWARE = [
     
 ]
 
+# Simple JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': True,
+    'AUTH_HEADER_TYPES': ('Bearer'),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_SECURE': False,
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_SAMESITE': 'Lax',
 }
 
+# CORS settings
 CORS_ALLOWED_ORIGINS = [
   'http://localhost:5173', # Vite default port
   'http://127.0.0.1:5173',
 ]
 
+# CSRF trusted origins settings
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
+# More CORS settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
-    'content-type',
+    'accept',
+    'accept-encoding',
     'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
     'x-csrftoken',
+    'x-requested-with',
 ]
 
 CACHES = {
@@ -151,7 +167,8 @@ AFRICASTALKING_SENDER_ID = os.getenv('AFRICASTALKING_SENDER_ID')
 # Rest framework
 REST_FRAMEWORK = {
   'DEFAULT_AUTHENTICATION_CLASSES': [
-    'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+    'authentication.authentication.CookieJWTAuthentication',  # Use custom backend
   ],
 }
 
@@ -219,6 +236,15 @@ SESSION_COOKIE_SECURE = False # Set to True in production
 CSRF_COOKIE_SECURE = False # Set to True in production
 SECURE_HSTS_SECONDS = 0 # Set to 31536000 in production
 
+# Cookie settings for JWT
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # CSRF needs to be accessible by JavaScript
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+JWT_COOKIE_SAMESITE = 'None'
+JWT_COOKIE_SECURE = False  # Set to True in production with HTTPS
+
+
 LOGIN_URL = '/admin/login/'  
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/login'
@@ -230,22 +256,17 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
+        '': {
+            'handlers': ['file'],
             'level': 'DEBUG',
-        },
-        'two_factor': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-        'django_otp': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }
