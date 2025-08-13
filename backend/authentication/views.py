@@ -256,6 +256,7 @@ def login(request):
     return Response({
         "message": "OTP sent to email and phone.",
         "email": email,
+        "phone_number": user.phone_number or '',
         "redirect": "/login-otp/"
     }, status=200)
 

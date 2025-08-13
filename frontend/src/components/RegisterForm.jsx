@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ const RegisterForm = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,87 +23,153 @@ const RegisterForm = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setError('');
     setSuccess('');
+
     if (formData.password !== formData.confirm_password) {
       setError('Passwords do not match');
+      setIsSubmitting(false);
       return;
     }
+
     try {
       const response = await axios.post('http://localhost:8000/user/register/', formData);
       setSuccess(response.data.message);
-      navigate(`/verify?email=${encodeURIComponent(response.data.email)}`);
+      setTimeout(() => {
+        navigate(`/verify?email=${encodeURIComponent(response.data.email)}`);
+      }, 1500);
     } catch (err) {
       setError(err.response?.data?.email?.[0] || err.response?.data?.phone_number?.[0] || 'Registration failed');
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      {success && <p className="text-green-500 mb-4">{success}</p>}
-      <div className="space-y-4">
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Email"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="text"
-          name="first_name"
-          value={formData.first_name}
-          onChange={handleChange}
-          placeholder="First Name"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="text"
-          name="last_name"
-          value={formData.last_name}
-          onChange={handleChange}
-          placeholder="Last Name"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="tel"
-          name="phone_number"
-          value={formData.phone_number}
-          onChange={handleChange}
-          placeholder="Phone Number (+254...)"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          placeholder="Password"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="password"
-          name="confirm_password"
-          value={formData.confirm_password}
-          onChange={handleChange}
-          placeholder="Confirm Password"
-          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          Register
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6">
+        <h2 className="text-3xl font-bold text-center text-cyan-800">Create Your Account</h2>
+        {error && (
+          <div className="flex items-center bg-red-100 text-red-700 p-4 rounded-lg" role="alert">
+            <FaExclamationCircle className="mr-2" />
+            <p>{error}</p>
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center bg-green-100 text-green-700 p-4 rounded-lg animate-fade-in" role="alert">
+            <FaCheckCircle className="mr-2" />
+            <p>{success}</p>
+          </div>
+        )}
+        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">First Name</label>
+              <input
+                type="text"
+                name="first_name"
+                id="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                placeholder="John"
+                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                required
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">Last Name</label>
+              <input
+                type="text"
+                name="last_name"
+                id="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                placeholder="Doe"
+                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                required
+                aria-required="true"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="johndoe@example.com"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              required
+              aria-required="true"
+              aria-describedby="email-error"
+            />
+          </div>
+          <div>
+            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input
+              type="tel"
+              name="phone_number"
+              id="phone_number"
+              value={formData.phone_number}
+              onChange={handleChange}
+              placeholder="+254..."
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              required
+              aria-required="true"
+              pattern="\+254[0-9]{9}"
+              title="Phone number must start with +254 followed by 9 digits"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              required
+              aria-required="true"
+            />
+          </div>
+          <div>
+            <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <input
+              type="password"
+              name="confirm_password"
+              id="confirm_password"
+              value={formData.confirm_password}
+              onChange={handleChange}
+              placeholder="Confirm your password"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              required
+              aria-required="true"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full py-3 px-4 bg-cyan-600 text-white rounded-lg cursor-pointer hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition duration-200 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? 'Registering...' : 'Register'}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <button
+            onClick={() => navigate('/login')}
+            className="text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+          >
+            Log in
+          </button>
+        </p>
       </div>
     </div>
   );
