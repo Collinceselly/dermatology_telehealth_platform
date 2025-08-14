@@ -128,7 +128,7 @@ const LoginForm = () => {
                 required
                 aria-required="true"
               />
-              <FaLock className='absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400' />
+              {/* <FaLock className='absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400' /> */}
               <button
                 type='button'
                 onClick={toggleShowPassword}
@@ -136,7 +136,6 @@ const LoginForm = () => {
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
-
               </button>
             </div>
           </div>

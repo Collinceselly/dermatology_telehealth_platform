@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
+import { FaExclamationCircle, FaCheckCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +16,7 @@ const RegisterForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -44,6 +45,11 @@ const RegisterForm = () => {
       setError(err.response?.data?.email?.[0] || err.response?.data?.phone_number?.[0] || 'Registration failed');
       setIsSubmitting(false);
     }
+  };
+
+  // Show password functionality that toggles between hide password and hide password
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -126,31 +132,51 @@ const RegisterForm = () => {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-              required
-              aria-required="true"
-            />
+            <div className='relative'>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                id="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                required
+                aria-required="true"
+              />
+              <button
+                  type='button'
+                  onClick={toggleShowPassword}
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+            </div>
           </div>
           <div>
             <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input
-              type="password"
-              name="confirm_password"
-              id="confirm_password"
-              value={formData.confirm_password}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-              required
-              aria-required="true"
-            />
+            <div className='relative'>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="confirm_password"
+                id="confirm_password"
+                value={formData.confirm_password}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                required
+                aria-required="true"
+              />
+              <button
+                  type='button'
+                  onClick={toggleShowPassword}
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+            </div>
           </div>
           <button
             type="submit"
