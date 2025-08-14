@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
+import { FaExclamationCircle, FaCheckCircle, FaLock, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   // Fetch CSRF token on component mount
@@ -76,6 +77,11 @@ const LoginForm = () => {
     }
   };
 
+  // Show password functionality that toggles between hide password and hide password
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6">
@@ -110,17 +116,29 @@ const LoginForm = () => {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-              required
-              aria-required="true"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                id="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                required
+                aria-required="true"
+              />
+              <FaLock className='absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400' />
+              <button
+                type='button'
+                onClick={toggleShowPassword}
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+
+              </button>
+            </div>
           </div>
           <p className="text-right text-sm text-gray-600">
           {/* Forgot your password?{' '} */}
