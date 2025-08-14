@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaExclamationCircle, FaCheckCircle, FaLock, FaArrowRight } from 'react-icons/fa';
+import { FaExclamationCircle, FaCheckCircle, FaLock, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const ResetPassword = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate();
 
   // Fetch CSRF token and validate session storage
@@ -100,6 +101,11 @@ const ResetPassword = () => {
     }
   };
 
+  // Show password functionality that toggles between hide password and hide password
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6">
@@ -122,7 +128,7 @@ const ResetPassword = () => {
             <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">New Password</label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="new_password"
                 id="new_password"
                 value={formData.new_password}
@@ -132,14 +138,22 @@ const ResetPassword = () => {
                 required
                 aria-required="true"
               />
-              <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <button
+                type='button'
+                onClick={toggleShowPassword}
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+              {/* <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" /> */}
             </div>
           </div>
           <div>
             <label htmlFor="confirm_new_password" className="block text-sm font-medium text-gray-700">Confirm New Password</label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="confirm_new_password"
                 id="confirm_new_password"
                 value={formData.confirm_new_password}
@@ -149,7 +163,15 @@ const ResetPassword = () => {
                 required
                 aria-required="true"
               />
-              <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <button
+                type='button'
+                onClick={toggleShowPassword}
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+              {/* <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" /> */}
             </div>
           </div>
           <button
