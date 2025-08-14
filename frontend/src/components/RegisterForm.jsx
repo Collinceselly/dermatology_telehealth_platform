@@ -16,7 +16,8 @@ const RegisterForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -42,7 +43,26 @@ const RegisterForm = () => {
         navigate(`/verify?email=${encodeURIComponent(response.data.email)}`);
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.email?.[0] || err.response?.data?.phone_number?.[0] || 'Registration failed');
+      // setError(err.response?.data?.email?.[0] || err.response?.data?.phone_number?.[0] || 'Registration failed');
+      // setIsSubmitting(false);
+      // Handle specific field errors
+      const errors = err.response?.data || {};
+      let errorMsg = '';
+      if (errors.password && Array.isArray(errors.password)) {
+        errorMsg = errors.password[0]; // e.g., "Password must contain at least one uppercase letter."
+      } else if (errors.email && Array.isArray(errors.email)) {
+        errorMsg = errors.email[0];
+      } else if (errors.phone_number && Array.isArray(errors.phone_number)) {
+        errorMsg = errors.phone_number[0];
+      } else if (errors.non_field_errors && Array.isArray(errors.non_field_errors)) {
+        errorMsg = errors.non_field_errors[0]; // e.g., "Passwords do not match."
+      } else if (errors.error) {
+        errorMsg = typeof errors.error === 'string' ? errors.error : errors.error.password || 'Registration failed.';
+      } else {
+        errorMsg = 'Registration failed. Please check your input.';
+      }
+      setError(errorMsg);
+      console.error('Registration error:', err.response?.data);
       setIsSubmitting(false);
     }
   };
@@ -50,6 +70,10 @@ const RegisterForm = () => {
   // Show password functionality that toggles between hide password and hide password
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleShowConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -158,7 +182,7 @@ const RegisterForm = () => {
             <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">Confirm Password</label>
             <div className='relative'>
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 name="confirm_password"
                 id="confirm_password"
                 value={formData.confirm_password}
@@ -170,11 +194,11 @@ const RegisterForm = () => {
               />
               <button
                   type='button'
-                  onClick={toggleShowPassword}
+                  onClick={toggleShowConfirmPassword}
                   className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none'
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
             </div>
           </div>

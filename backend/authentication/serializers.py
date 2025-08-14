@@ -3,10 +3,11 @@ from .models import CustomUser
 import phonenumbers
 import hashlib
 from django.core.cache import cache
+import re
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=12)
-    confirm_password = serializers.CharField(write_only=True, min_length=12)
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = CustomUser
@@ -33,6 +34,24 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         if CustomUser.objects.filter(phone_number_hash=phone_hash).exists():
             raise serializers.ValidationError({"phone_number": "This phone number is already registered."})
         return data
+    
+    def validate_password(self, value):
+        if len(value) < 8:
+            # logger.error("Password validation failed: Too short")
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        if not re.search(r'[A-Z]', value):
+            # logger.error("Password validation failed: No uppercase")
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', value):
+            # logger.error("Password validation failed: No lowercase")
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r'[0-9]', value):
+            # logger.error("Password validation failed: No number")
+            raise serializers.ValidationError("Password must contain at least one number.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            # logger.error("Password validation failed: No special character")
+            raise serializers.ValidationError("Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>).")
+        return value
 
     def create(self, validated_data):
         # Store user data in cache instead of creating user immediately
