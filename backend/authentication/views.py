@@ -21,13 +21,67 @@ import africastalking
 import logging
 from django.middleware.csrf import get_token
 from datetime import timedelta
+import re
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+# Generating an OTP for registration and login functionalities
 def generate_otp_code(length=6):
     code = ''.join(random.choices(string.digits, k=length))
     logger.debug(f"Generated OTP: {code}")
     return code
+
+
+# Updated email validation view with format validation
+@api_view(['POST'])
+def check_email(request):
+    logger.debug(f"Check email: Received data={request.data}")
+    email = request.data.get('email', '').lower()
+    
+    if not email:
+        logger.debug("Check email: Missing email")
+        return Response({"error": "Email is required."}, status=400)
+    
+    # Validate email format
+    try:
+        EmailValidator()(email)
+    except ValidationError:
+        logger.debug(f"Check email: Invalid email format for {email}")
+        return Response({"error": "Invalid email format."}, status=400)
+    
+    try:
+        CustomUser.objects.get(email=email)
+        logger.debug(f"Check email: Email {email} exists")
+        return Response({"message": "Email exists."}, status=200)
+    except CustomUser.DoesNotExist:
+        logger.debug(f"Check email: Email {email} does not exist")
+        return Response({"error": "Email does not exist."}, status=404)
+
+# Password strength validation function
+def validate_password_strength(password):
+    """
+    Validate password strength:
+    - At least 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one number
+    - At least one special character
+    Returns: (is_valid, error_message)
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must include at least one uppercase letter."
+    if not re.search(r'[a-z]', password):
+        return False, "Password must include at least one lowercase letter."
+    if not re.search(r'[0-9]', password):
+        return False, "Password must include at least one number."
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must include at least one special character (e.g., !@#$%^&*)."
+    return True, ""
+
 
 @api_view(['GET'])
 def get_csrf_token(request):
@@ -400,3 +454,129 @@ class CustomTokenRefreshView(TokenRefreshView):
         except TokenError as e:
             logger.error(f"TokenRefresh failed: {str(e)}")
             return Response({"error": str(e)}, status=401)
+        
+
+
+# Password reset request view
+@api_view(['POST'])
+def password_reset_request(request):
+    logger.debug(f"Password reset request: Received data={request.data}")
+    email = request.data.get('email', '').lower()
+    
+    try:
+        user = CustomUser.objects.get(email=email)
+    except CustomUser.DoesNotExist:
+        logger.debug(f"Password reset: No user found for {email}")
+        return Response({"error": "If the email exists, an OTP will be sent."}, status=200)
+    
+    # Generate and store OTP
+    otp_code = generate_otp_code()
+    cache_key = f"reset_otp_{email}"
+    cache.set(cache_key, otp_code, timeout=1800)  # 30 minutes
+    cached_otp = cache.get(cache_key)
+    logger.debug(f"Password reset: Email={email}, OTP={otp_code}, CachedOTP={cached_otp}")
+    
+    if cached_otp != otp_code:
+        logger.error(f"Password reset: Cache set failed for {email}")
+        return Response({"error": "Failed to store OTP"}, status=500)
+    
+    # Send OTP via email
+    try:
+        send_mail(
+            'Your Password Reset OTP',
+            f'Your one-time code to reset your password is: {otp_code}',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        logger.debug(f"Password reset: Email sent to {email}")
+    except Exception as e:
+        logger.error(f"Password reset: Email failed for {email}: {str(e)}")
+        return Response({"error": "Failed to send OTP email"}, status=500)
+    
+    # Send OTP via SMS if phone number exists
+    if user.phone_number and settings.AFRICASTALKING_USERNAME and settings.AFRICASTALKING_API_KEY:
+        try:
+            africastalking.initialize(settings.AFRICASTALKING_USERNAME, settings.AFRICASTALKING_API_KEY)
+            sms = africastalking.SMS
+            sms.send(f"Your password reset OTP is: {otp_code}", [user.phone_number], settings.AFRICASTALKING_SENDER_ID)
+            logger.debug(f"Password reset: SMS sent to {user.phone_number}")
+        except Exception as e:
+            logger.error(f"Password reset: SMS failed for {user.phone_number}: {str(e)}")
+    
+    return Response({"message": "OTP sent to your email and phone (if registered)."}, status=200)
+
+# Password reset confirmation view with strength validation
+@api_view(['POST'])
+def password_reset_confirm(request):
+    logger.debug(f"Password reset confirm: Received data={request.data}")
+    email = request.data.get('email', '').lower()
+    otp = request.data.get('otp', '')
+    new_password = request.data.get('new_password', '')
+    confirm_new_password = request.data.get('confirm_new_password', '')
+    
+    # Early validation for missing email or OTP
+    if not email:
+        logger.debug("Password reset confirm: Missing email")
+        return Response({"error": "Email is required."}, status=400)
+    if not otp:
+        logger.debug("Password reset confirm: Missing OTP")
+        return Response({"error": "OTP is required."}, status=400)
+    
+    # OTP-only validation for /reset-otp
+    if not new_password and not confirm_new_password:
+        try:
+            EmailValidator()(email)
+        except ValidationError:
+            logger.debug(f"Password reset confirm: Invalid email format for {email}")
+            return Response({"error": "Invalid email format."}, status=400)
+        
+        cache_key = f"reset_otp_{email}"
+        cached_otp = cache.get(cache_key)
+        if cached_otp != otp:
+            logger.debug(f"Password reset confirm: Invalid OTP for {email}")
+            return Response({"error": "Invalid OTP or request expired."}, status=400)
+        
+        try:
+            CustomUser.objects.get(email=email)
+            logger.debug(f"Password reset confirm: Valid OTP for {email}")
+            return Response({"message": "OTP verified."}, status=200)
+        except CustomUser.DoesNotExist:
+            logger.debug(f"Password reset confirm: No user found for {email}")
+            return Response({"error": "Invalid OTP or request expired."}, status=400)
+    
+    # Full reset validation for /reset-password
+    if not new_password or not confirm_new_password:
+        logger.debug(f"Password reset confirm: Missing password fields for {email}")
+        return Response({"error": "New password and confirm password are required for password reset."}, status=400)
+    
+    if new_password != confirm_new_password:
+        logger.debug(f"Password reset confirm: Passwords do not match for {email}")
+        return Response({"error": "Passwords do not match."}, status=400)
+    
+    # Validate password strength
+    is_valid, error_message = validate_password_strength(new_password)
+    if not is_valid:
+        logger.debug(f"Password reset confirm: Weak password for {email}: {error_message}")
+        return Response({"error": error_message}, status=400)
+    
+    # Validate OTP
+    cache_key = f"reset_otp_{email}"
+    cached_otp = cache.get(cache_key)
+    if cached_otp != otp:
+        logger.debug(f"Password reset confirm: Invalid OTP for {email}")
+        return Response({"error": "Invalid OTP or request expired."}, status=400)
+    
+    try:
+        user = CustomUser.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+        cache.delete(cache_key)  # Invalidate OTP
+        logger.debug(f"Password reset confirm: Password updated for {email}")
+        return Response({"message": "Password reset successfully."}, status=200)
+    except CustomUser.DoesNotExist:
+        logger.debug(f"Password reset confirm: No user found for {email}")
+        return Response({"error": "Invalid OTP or request expired."}, status=400)
+    except Exception as e:
+        logger.error(f"Password reset confirm: Failed for {email}: {str(e)}")
+        return Response({"error": "Failed to reset password."}, status=500)

@@ -6,6 +6,9 @@ import LoginForm from './components/LoginForm';
 import VerifyLoginOTPForm from './components/VerifyLoginOTPForm';
 import PatientDashboard from './components/PatientDashboard';
 import LogoutPage from './components/LogoutPage';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import VerifyResetOTP from './components/VerifyResetOTP';
 import './index.css';
 
 function App() {
@@ -18,6 +21,9 @@ function App() {
         <Route path="/login-otp" element={<VerifyLoginOTPForm />} />
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/logout" element={<LogoutPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-otp" element={<VerifyResetOTP />} />
       </Routes>
     </Router>
   );

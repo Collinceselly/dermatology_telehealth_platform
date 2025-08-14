@@ -24,4 +24,10 @@ urlpatterns = [
 
     # Token refresh endpoint
     path('refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
+
+    
+    # Password reset endpoints
+    path('check-email/', views.check_email, name='check_email'),
+    path('password-reset-request/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset-confirm/', views.password_reset_confirm, name='password_reset_confirm'),
 ]
